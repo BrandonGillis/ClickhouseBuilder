@@ -2240,6 +2240,22 @@ abstract class BaseBuilder
     }
 
     /**
+     * Merge parameters from another builder into this builder.
+     *
+     * @param BaseBuilder $builder The builder to merge parameters from
+     *
+     * @return $this
+     */
+    public function mergeParameters(BaseBuilder $builder)
+    {
+        foreach ($builder->getParameters() as $name => $parameter) {
+            $this->parameters[$name] = $parameter;
+        }
+
+        return $this;
+    }
+
+    /**
      * Get parameters as bindings array for ClickHouse client.
      * Returns associative array: ['name1' => value1, 'name2' => value2]
      * without 'param_' prefix (client will add it automatically).

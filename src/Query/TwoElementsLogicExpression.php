@@ -126,9 +126,7 @@ class TwoElementsLogicExpression
 
         if ($query instanceof BaseBuilder) {
             // Merge parameters from nested query to parent query
-            foreach ($query->getParameters() as $name => $parameter) {
-                $this->query->getParameters()[$name] = $parameter;
-            }
+            $this->query->mergeParameters($query);
             $this->firstElement(new Expression("({$query->toSql()})"));
         }
 
@@ -150,9 +148,7 @@ class TwoElementsLogicExpression
 
         if ($query instanceof BaseBuilder) {
             // Merge parameters from nested query to parent query
-            foreach ($query->getParameters() as $name => $parameter) {
-                $this->query->getParameters()[$name] = $parameter;
-            }
+            $this->query->mergeParameters($query);
             $this->secondElement(new Expression("({$query->toSql()})"));
         }
 

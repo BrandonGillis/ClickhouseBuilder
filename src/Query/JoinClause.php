@@ -261,6 +261,8 @@ class JoinClause
         }
 
         if ($query instanceof BaseBuilder) {
+            // Merge parameters from nested query to parent query
+            $this->query->mergeParameters($query);
             $this->table(new Expression("({$query->toSql()})"));
         }
 

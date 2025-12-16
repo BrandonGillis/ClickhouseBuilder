@@ -157,6 +157,9 @@ class From
         }
 
         if ($query instanceof BaseBuilder) {
+            // Merge parameters from nested query to parent query
+            $this->query->mergeParameters($query);
+
             if (is_null($this->alias) && !is_null($this->table)) {
                 $this->as($this->table);
             }

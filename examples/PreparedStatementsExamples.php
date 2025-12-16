@@ -80,16 +80,17 @@ function example5_complex_query()
     $categories = ['electronics', 'computers', 'phones'];
     $minStock = 10;
 
-$products = DB::connection('clickhouse')
-    ->table('products')
-    ->select('product_id', 'name', 'price', 'category', 'stock')
-    ->where('price', '>=', new Parameter('min_price', $minPrice, 'Float64'))
-    ->where('price', '<=', new Parameter('max_price', $maxPrice, 'Float64'))
-    ->where('category', 'IN', new Parameter('categories', $categories, 'Array(String)'))
-    ->where('stock', '>=', new Parameter('min_stock', $minStock, 'UInt32'))
-    ->orderBy('price', 'asc')
-    ->limit(100)
-    ->get();    return $products;
+    $products = DB::connection('clickhouse')
+        ->table('products')
+        ->select('product_id', 'name', 'price', 'category', 'stock')
+        ->where('price', '>=', new Parameter('min_price', $minPrice, 'Float64'))
+        ->where('price', '<=', new Parameter('max_price', $maxPrice, 'Float64'))
+        ->where('category', 'IN', new Parameter('categories', $categories, 'Array(String)'))
+        ->where('stock', '>=', new Parameter('min_stock', $minStock, 'UInt32'))
+        ->orderBy('price', 'asc')
+        ->limit(100)
+        ->get();
+    return $products;
 }
 
 // Example 6: Automatic type inference
@@ -102,7 +103,7 @@ function example6_auto_type_inference()
         ->where('id', '=', new Parameter('id', 123))          // Infers UInt8
         ->where('name', '=', new Parameter('name', 'Alice'))  // Infers String
         ->where('active', '=', new Parameter('active', true)) // Infers UInt8
-;
+    ;
 
     return $builder->get();
 }
@@ -220,4 +221,59 @@ function example10_parameter_management()
     // Clear all parameters
     $builder->clearParameters();
     echo "Parameters cleared: " . count($builder->getParameters()) . "\n";
+}
+
+// Example 11: Subquery with prepared statements
+function example11_subquery_with_prepared_statements()
+{
+    // Using closure with subquery
+    $builder = DB::connection('clickhouse')
+        ->from(function ($from) {
+            $from->query()->select('column')->from('table')->where('user_id', '=', 1);
+        })
+        ->select('*');
+
+    // Parameters from subquery are automatically merged
+    $result = $builder->get();
+
+    return $result;
+}
+
+// Example 12: Subquery with named parameters
+function example12_subquery_with_named_parameters()
+{
+    $userId = 42;
+
+    $builder = DB::connection('clickhouse')
+        ->from(function ($from) {
+            $from->query()->select('column')
+                ->from('table')
+                ->where('user_id', '=', new Parameter('user_id', 42, 'UInt32'));
+        })
+        ->select('*');
+
+    // The parameter is automatically available in the parent query
+    $result = $builder->get();
+
+    return $result;
+}
+
+// Example 13: Subquery with multiple parameters
+function example13_subquery_with_multiple_parameters()
+{
+    $builder = DB::connection('clickhouse')
+        ->from(function ($from) {
+            $from->query()->select('column')
+                ->from('table')
+                ->where('user_id', '=', 1)
+                ->where('status', '=', 'active')
+                ->where('created_at', '>=', new Parameter('start_date', '2024-01-01', 'String'));
+        })
+        ->select('*')
+        ->where('total', '>', 100); // Additional parameter in parent query
+
+    // All parameters from subquery and parent query are merged
+    $result = $builder->get();
+
+    return $result;
 }

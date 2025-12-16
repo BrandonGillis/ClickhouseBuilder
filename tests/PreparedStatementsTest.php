@@ -559,4 +559,107 @@ class PreparedStatementsTest extends TestCase
         $this->assertEquals('UInt32', $param->getType());
         $this->assertEquals('{value:UInt32}', $param->getPlaceholder());
     }
+
+    public function test_subquery_in_from_with_parameter()
+    {
+        $builder = $this->getBuilder();
+
+        $builder->from(function ($from) {
+            $from->query()->select('column')->from('table')->where('user_id', '=', 1);
+        });
+
+        $sql = $builder->toSql();
+        $bindings = $builder->getBindings();
+
+        // Should contain parameter placeholder in subquery
+        $this->assertStringContainsString('{p0:', $sql);
+        // Should have the parameter in bindings
+        $this->assertCount(1, $bindings);
+        $this->assertEquals(1, $bindings['p0']);
+    }
+
+    public function test_subquery_in_from_with_named_parameter()
+    {
+        $builder = $this->getBuilder();
+
+        $param = new Parameter('user_id', 42, 'UInt32');
+
+        $builder->from(function ($from) {
+            $from->query()->select('column')->from('table')->where('user_id', '=', new Parameter('user_id', 42, 'UInt32'));
+        });
+
+        $sql = $builder->toSql();
+        $bindings = $builder->getBindings();
+
+        // Should contain named parameter in subquery
+        $this->assertStringContainsString('{user_id:UInt32}', $sql);
+        // Should have the parameter in bindings
+        $this->assertCount(1, $bindings);
+        $this->assertEquals(42, $bindings['user_id']);
+    }
+
+    public function test_subquery_in_from_with_multiple_parameters()
+    {
+        $builder = $this->getBuilder();
+
+        $builder->from(function ($from) {
+            $from->query()
+                ->select('column')
+                ->from('table')
+                ->where('user_id', '=', 1)
+                ->where('status', '=', 'active');
+        });
+
+        $sql = $builder->toSql();
+        $bindings = $builder->getBindings();
+
+        // Should contain both parameters
+        $this->assertStringContainsString('{p0:', $sql);
+        $this->assertStringContainsString('{p1:', $sql);
+        // Should have both parameters in bindings
+        $this->assertCount(2, $bindings);
+        $this->assertEquals(1, $bindings['p0']);
+        $this->assertEquals('active', $bindings['p1']);
+    }
+
+    public function test_subquery_in_from_with_closure_and_parameter()
+    {
+        $builder = $this->getBuilder();
+
+        $builder->from(function ($from) {
+            $from->query(function ($query) {
+                $query->select('column')->from('table')->where('user_id', '=', 1);
+            });
+        });
+
+        $sql = $builder->toSql();
+        $bindings = $builder->getBindings();
+
+        // Should contain parameter placeholder in subquery
+        $this->assertStringContainsString('{p0:', $sql);
+        // Should have the parameter in bindings
+        $this->assertCount(1, $bindings);
+        $this->assertEquals(1, $bindings['p0']);
+    }
+
+    public function test_subquery_in_from_with_direct_builder()
+    {
+        $builder = $this->getBuilder();
+
+        $subQuery = $builder->newQuery()
+            ->select('column')
+            ->from('table')
+            ->where('user_id', '=', 1);
+
+        $builder->from($subQuery);
+
+        $sql = $builder->toSql();
+        $bindings = $builder->getBindings();
+
+        // Should contain parameter placeholder in subquery
+        $this->assertStringContainsString('{p0:', $sql);
+        // Should have the parameter in bindings
+        $this->assertCount(1, $bindings);
+        $this->assertEquals(1, $bindings['p0']);
+    }
 }
